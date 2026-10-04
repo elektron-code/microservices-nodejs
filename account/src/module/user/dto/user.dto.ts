@@ -15,21 +15,33 @@ export class UserDto {
   login: string;
 
   @ApiProperty({ description: 'Телефон пользователя', required: true, type: String })
+  @Expose()
   phone: string;
 
   @ApiProperty({ description: 'Имя пользователя', required: true, type: String })
+  @Expose()
   firstName: string;
 
   @ApiProperty({ description: 'Фамилия пользователя', required: true, type: String })
+  @Expose()
   lastName: string;
 
   @ApiProperty({ description: 'Отчество пользователя', required: true, type: String })
+  @Expose()
   middleName: string;
 
-  @ApiProperty({ description: 'E-mail пользователя', required: true, type: String })
+  @ApiProperty({ description: 'Email пользователя', required: true, type: String })
+  @Expose()
   email: string;
 
+  @ApiProperty({ description: 'Баланс пользователя', type: String })
+  @IsString()
+  @Expose()
+  balance: string;
+
   constructor(entity: Partial<UserEntity>) {
-    return plainToInstance(UserDto, entity, { excludeExtraneousValues: true });
+    return plainToInstance(UserDto, entity, {
+      excludeExtraneousValues: true,
+    });
   }
 }

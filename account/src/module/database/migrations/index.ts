@@ -1,3 +1,3 @@
-import { AddUserEntity1789925498357 } from './1789925498357-AddUserEntity';
+import { InitUserSchema1791128327461 } from './1791128327461-InitUserSchema';
 
-export default [AddUserEntity1789925498357];
+export default [InitUserSchema1791128327461];

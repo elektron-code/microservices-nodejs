@@ -1,27 +1,45 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import  GetUserFilterDto  from './dto/get-users-filter.dto';
 import { UserDto } from './dto/user.dto';
-import GetUserFilterDto from './dto/get-users-filter.dto';
 import { SignInDto } from './dto/sign-in.dto';
+import { ChangeBalanceDto } from './dto/change-balance.dto';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get('/verification')
-    verification(@Query() dto: SignInDto): Promise<boolean> {
-  return this.userService.verification(dto);
-}
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
+  create(@Body() createUserDto: CreateUserDto): Promise<void> {
     return this.userService.create(createUserDto);
   }
 
+  @Post('/balance')
+  balance(@Body() body: ChangeBalanceDto): Promise<void> {
+    return this.userService.changeBalance(body);
+  }
+
   @Get()
-  findAll(@Query() getUserFilterDto: GetUserFilterDto): Promise<{ items: UserDto[]; total: number }> {
+  findAll(
+    @Query() getUserFilterDto: GetUserFilterDto,
+  ): Promise<{ items: UserDto[]; total: number }> {
     return this.userService.findAll(getUserFilterDto);
+  }
+
+  @Get('/verification')
+  verification(@Query() dto: SignInDto): Promise<boolean> {
+    return this.userService.verification(dto);
   }
 
   @Get(':id')

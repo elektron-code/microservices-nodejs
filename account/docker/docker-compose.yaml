@@ -2,19 +2,54 @@ version: "3.9"
 
 services:
   postgres:
-    image: postgres:16-alpine
-    container_name: book-db-postgres
-    ports: [ "5432:5432" ]
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: account-db
+    image: postgres:15
+    container_name: book-dbs
+    ports: ["5132:5432"]
+    env_file: [.env]
     volumes:
       - ./volumes/postgres:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
-    networks:
-      - book-network
 
+  # Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: book-kafka-zookeeper
+    platform: linux/x86_64
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports: ["22181:2181"]
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: book-kafka
+    platform: linux/x86_64
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on: [zookeeper]
+    ports: ["29092:29092"]
+    restart: unless-stopped
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: book-kafka-ui
+    platform: linux/x86_64
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+    depends_on: [zookeeper, kafka]
+    ports: ["29093:8080"]
+    restart: unless-stopped
+
+  # Redis
   redis:
     container_name: book-redis
     platform: linux/x86_64
@@ -23,9 +58,8 @@ services:
     ports:
       - 6379:6379
     networks:
-      - book-network
-    env_file: [ .env ]
-    restart: unless-stopped
+      - redis-network
+    env_file: [.env]
 
   redis-commander:
     container_name: book-redis-commander
@@ -35,13 +69,17 @@ services:
     environment:
       REDIS_HOSTS: redis
       REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_PORT: redis:6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-    ports: [ "29094:8081" ]
+    ports: ["29094:8081"]
     networks:
-      - book-network
-    env_file: [ .env ]
+      - redis-network
+    env_file: [.env]
+
+volumes:
+  redis_data:
+    driver: local
 
 networks:
-  book-network:
+  redis-network:
     driver: bridge

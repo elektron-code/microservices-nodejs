@@ -3,11 +3,6 @@ import { Expose } from 'class-transformer';
 import { IsString } from 'class-validator';
 
 export class CreateUserDto {
-  @ApiProperty({ description: 'Идентификатор пользователя', required: true, type: String })
-  @Expose()
-  @IsString()
-  userId: string;
-
   @ApiProperty({ description: 'Логин пользователя', required: true, type: String })
   @Expose()
   @IsString()
@@ -19,17 +14,27 @@ export class CreateUserDto {
   password: string;
 
   @ApiProperty({ description: 'Телефон пользователя', required: true, type: String })
+  @Expose()
+  @IsString()
   phone: string;
 
   @ApiProperty({ description: 'Имя пользователя', required: true, type: String })
+  @Expose()
+  @IsString()
   firstName: string;
 
   @ApiProperty({ description: 'Фамилия пользователя', required: true, type: String })
+  @Expose()
+  @IsString()
   lastName: string;
 
   @ApiProperty({ description: 'Отчество пользователя', required: true, type: String })
+  @Expose()
+  @IsString()
   middleName: string;
 
   @ApiProperty({ description: 'E-mail пользователя', required: true, type: String })
+  @Expose()
+  @IsString()
   email: string;
 }

@@ -13,6 +13,17 @@ import { UserRepository } from './user.repository';
 import GetUserFilterDto from './dto/get-users-filter.dto';
 import { UserDto } from './dto/user.dto';
 import { SignInDto } from './dto/sign-in.dto';
+import { ChangeBalanceDto } from './dto/change-balance.dto';
+import {
+  BalanceChangedStatus,
+  TransactionType,
+} from './user.types';
+import type {
+  EventBalanceChangedData,
+  EventTransactionSavedData,
+} from './user.types';
+import { EventNameEnum } from './user.types';
+import { KafkaService } from '../../config/kafka/kafka.service';
 import { REDIS_TOKEN } from '../../config/redis/redis.constant';
 
 @Injectable()
@@ -20,6 +31,7 @@ export class UserService {
   constructor(
     @Inject(REDIS_TOKEN) private readonly redis: Redis,
     private readonly userRepository: UserRepository,
+    private readonly kafkaService: KafkaService,
   ) {}
 
   async create(user: CreateUserDto): Promise<void> {
@@ -39,6 +51,88 @@ export class UserService {
       passwordSalt: salt.toString('hex'),
       ...user,
     });
+  }
+
+  /**
+   * HTTP-метод (оставлен для отладки / админских операций).
+   */
+  async changeBalance(params: ChangeBalanceDto): Promise<void> {
+    const { userId, amount, transactionType } = params;
+    const user = await this.userRepository.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    let newBalance: number;
+    if (transactionType === TransactionType.DEPOSIT) {
+      newBalance = +user.balance + +amount;
+    } else {
+      newBalance = +user.balance - +amount;
+    }
+
+    if (newBalance < 0) {
+      throw new ConflictException('Insufficient funds');
+    }
+
+    await this.userRepository.changeBalance({
+      userId,
+      balance: newBalance.toString(),
+    });
+  }
+
+  /**
+   * Метод, вызываемый из Kafka-контроллера при получении события TransactionSaved.
+   * Меняет баланс и публикует BalanceChanged с результатом.
+   */
+  async changeBalanceFromKafka(
+    params: EventTransactionSavedData,
+  ): Promise<void> {
+    const { userId, amount, transactionType, transactionId } = params;
+
+    try {
+      const user = await this.userRepository.findById(userId);
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      let newBalance: number;
+      if (transactionType === TransactionType.DEPOSIT) {
+        newBalance = +user.balance + +amount;
+      } else {
+        newBalance = +user.balance - +amount;
+      }
+
+      if (newBalance < 0) {
+        throw new ConflictException('Insufficient funds');
+      }
+
+      await this.userRepository.changeBalance({
+        userId,
+        balance: newBalance.toString(),
+      });
+
+      const successEvent: EventBalanceChangedData = {
+        transactionId,
+        status: BalanceChangedStatus.COMPLETED,
+      };
+
+      await this.kafkaService.produce({
+        eventName: EventNameEnum.BalanceChanged,
+        data: successEvent,
+      });
+    } catch {
+      const failedEvent: EventBalanceChangedData = {
+        transactionId,
+        status: BalanceChangedStatus.FAILED,
+      };
+
+      await this.kafkaService.produce({
+        eventName: EventNameEnum.BalanceChanged,
+        data: failedEvent,
+      });
+    }
   }
 
   async verification({ login, password }: SignInDto): Promise<boolean> {
@@ -67,13 +161,13 @@ export class UserService {
   }
 
   async remove(id: string) {
-  const user = await this.userRepository.findById(id);
+    const user = await this.userRepository.findById(id);
 
-  if (!user) {
-    throw new NotFoundException('User not found');
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.redis.del(user.login);
+    return this.userRepository.deleteUser(id);
   }
-
-  await this.redis.del(user.login);
-  return this.userRepository.deleteUser(id);
-}
 }
