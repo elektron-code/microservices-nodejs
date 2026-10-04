@@ -1,4 +1,5 @@
 version: "3.9"
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -11,3 +12,36 @@ services:
     volumes:
       - ./volumes/postgres:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - book-network
+
+  redis:
+    container_name: book-redis
+    platform: linux/x86_64
+    image: bitnamilegacy/redis:7.0
+    command: redis-server --requirepass ${REDIS_PASSWORD} --save "" --appendonly no
+    ports:
+      - 6379:6379
+    networks:
+      - book-network
+    env_file: [ .env ]
+    restart: unless-stopped
+
+  redis-commander:
+    container_name: book-redis-commander
+    image: rediscommander/redis-commander:latest
+    platform: linux/x86_64
+    restart: always
+    environment:
+      REDIS_HOSTS: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports: [ "29094:8081" ]
+    networks:
+      - book-network
+    env_file: [ .env ]
+
+networks:
+  book-network:
+    driver: bridge
