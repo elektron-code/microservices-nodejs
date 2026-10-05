@@ -29,29 +29,25 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: Debug CI environment
+      - name: Debug dependencies
         run: |
-          echo "=== PWD ==="
+          echo "Working directory:"
           pwd
-          echo "=== FILES ==="
-          ls -la
-          echo "=== package.json typescript ==="
-          grep typescript package.json
-          echo "=== package-lock.json typescript ==="
-          grep -A2 '"node_modules/typescript"' package-lock.json || echo "NOT FOUND"
-          echo "=== git commit ==="
-          git log -1 --format="%H %s"
-          echo "=== git branch ==="
-          git branch --show-current
-
-      - name: Search for 5.9.3 in lock
-        run: |
-          echo "=== grep 5.9.3 in package-lock.json ==="
-          grep -n "5.9.3" package-lock.json || echo "NOT FOUND"
-          echo "=== SHA of package-lock.json ==="
-          sha256sum package-lock.json
-          echo "=== SHA of package.json ==="
-          sha256sum package.json
+      
+          echo "Git commit:"
+          git rev-parse HEAD
+      
+          echo "package.json:"
+          cat package.json
+      
+          echo "TypeScript in package.json:"
+          node -p "require('./package.json').devDependencies?.typescript"
+      
+          echo "TypeScript in package-lock.json:"
+          node -p "require('./package-lock.json').packages[''].devDependencies?.typescript"
+      
+          echo "TypeScript lock entry:"
+          node -p "require('./package-lock.json').packages['node_modules/typescript']?.version"
       
       - name: Install dependencies
         run: npm ci
