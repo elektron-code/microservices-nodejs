@@ -94,7 +94,26 @@ jobs:
           else
             echo "No root package-lock.json"
           fi
+
+      - name: Check npm configuration files
+        run: |
+          echo "=== .npmrc files ==="
+          find .. -name ".npmrc" -print
       
+          echo "=== account/.npmrc ==="
+          if [ -f .npmrc ]; then
+            cat .npmrc
+          else
+            echo "No account/.npmrc"
+          fi
+      
+          echo "=== root .npmrc ==="
+          if [ -f ../.npmrc ]; then
+            cat ../.npmrc
+          else
+            echo "No root .npmrc"
+          fi
+    
       - name: Install dependencies
         run: npm ci --verbose
 
