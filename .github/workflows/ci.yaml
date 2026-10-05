@@ -61,6 +61,23 @@ jobs:
       
           echo "=== npm package root ==="
           npm root
+
+      - name: Find TypeScript 5.9.3
+        run: |
+          echo "=== All package.json files ==="
+          find .. -name package.json -print
+      
+          echo "=== All package-lock.json files ==="
+          find .. -name package-lock.json -print
+      
+          echo "=== Search exact 5.9.3 in package files ==="
+          grep -R -n --include="package.json" --include="package-lock.json" '"5.9.3"' .. || true
+      
+          echo "=== Search TypeScript references ==="
+          grep -R -n --include="package.json" --include="package-lock.json" 'typescript' .. || true
+      
+          echo "=== npm package tree ==="
+          npm ls typescript --all || true
       
       - name: Install dependencies
         run: npm ci --verbose
