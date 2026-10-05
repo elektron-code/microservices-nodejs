@@ -78,6 +78,22 @@ jobs:
       
           echo "=== npm package tree ==="
           npm ls typescript --all || true
+
+      - name: Check root package
+        run: |
+          echo "=== Root package.json ==="
+          if [ -f ../package.json ]; then
+            cat ../package.json
+          else
+            echo "No root package.json"
+          fi
+      
+          echo "=== Root package-lock.json ==="
+          if [ -f ../package-lock.json ]; then
+            cat ../package-lock.json | head -80
+          else
+            echo "No root package-lock.json"
+          fi
       
       - name: Install dependencies
         run: npm ci --verbose
