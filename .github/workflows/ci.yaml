@@ -29,25 +29,38 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: Debug dependencies
+      - name: Debug npm
         run: |
-          echo "Working directory:"
-          pwd
+          echo "=== Environment ==="
+          node -v
+          npm -v
+          npm config get prefix
+          npm config get cache
       
-          echo "Git commit:"
+          echo "=== Git ==="
           git rev-parse HEAD
+          git status --short
       
-          echo "package.json:"
-          cat package.json
+          echo "=== package.json ==="
+          node -p "require('./package.json').devDependencies.typescript"
       
-          echo "TypeScript in package.json:"
-          node -p "require('./package.json').devDependencies?.typescript"
+          echo "=== package-lock root ==="
+          node -p "require('./package-lock.json').packages[''].devDependencies.typescript"
       
-          echo "TypeScript in package-lock.json:"
-          node -p "require('./package-lock.json').packages[''].devDependencies?.typescript"
+          echo "=== package-lock TypeScript ==="
+          node -p "require('./package-lock.json').packages['node_modules/typescript'].version"
       
-          echo "TypeScript lock entry:"
-          node -p "require('./package-lock.json').packages['node_modules/typescript']?.version"
+          echo "=== Search TypeScript 5.9.3 in repository ==="
+          git grep -n "5.9.3" || true
+      
+          echo "=== npm config ==="
+          npm config list
+      
+          echo "=== npm prefix ==="
+          npm prefix
+      
+          echo "=== npm package root ==="
+          npm root
       
       - name: Install dependencies
         run: npm ci
