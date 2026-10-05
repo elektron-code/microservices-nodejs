@@ -29,6 +29,21 @@ jobs:
         with:
           node-version: '22.x'
 
+      - name: Debug CI environment
+        run: |
+          echo "=== PWD ==="
+          pwd
+          echo "=== FILES ==="
+          ls -la
+          echo "=== package.json typescript ==="
+          grep typescript package.json
+          echo "=== package-lock.json typescript ==="
+          grep -A2 '"node_modules/typescript"' package-lock.json || echo "NOT FOUND"
+          echo "=== git commit ==="
+          git log -1 --format="%H %s"
+          echo "=== git branch ==="
+          git branch --show-current
+      
       - name: Install dependencies
         run: npm ci
 
