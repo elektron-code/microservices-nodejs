@@ -1,0 +1,140 @@
+version: "3.9"
+
+services:
+  # ============ ИНФРАСТРУКТУРА ============
+  postgres:
+    image: postgres:15
+    container_name: book-dbs
+    ports: ["5132:5432"]
+    env_file: [./docker/.env.docker]
+    volumes:
+      - ./docker/volumes/postgres:/var/lib/postgresql/data
+      - ./docker/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: book-kafka-zookeeper
+    platform: linux/x86_64
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports: ["22181:2181"]
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: book-kafka
+    platform: linux/x86_64
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on: [zookeeper]
+    ports: ["29092:29092"]
+    restart: unless-stopped
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: book-kafka-ui
+    platform: linux/x86_64
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+    depends_on: [zookeeper, kafka]
+    ports: ["29093:8080"]
+    restart: unless-stopped
+
+  redis:
+    container_name: book-redis
+    platform: linux/x86_64
+    image: bitnamilegacy/redis:7.0
+    command: redis-server --requirepass ${REDIS_PASSWORD:-password} --save "" --appendonly no
+    ports:
+      - 6379:6379
+    env_file: [./docker/.env.docker]
+
+  redis-commander:
+    container_name: book-redis-commander
+    image: rediscommander/redis-commander:latest
+    platform: linux/x86_64
+    restart: always
+    environment:
+      REDIS_HOSTS: redis
+      REDIS_HOST: redis
+      REDIS_PORT: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-password}
+    ports: ["29094:8081"]
+    env_file: [./docker/.env.docker]
+
+  # ============ МИГРАЦИИ ============
+  account_migration:
+    image: elektroncode/microservices-account-migration:latest
+    env_file: [./account/.env.docker]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  transaction_migration:
+    image: elektroncode/microservices-transaction-migration:latest
+    env_file: [./transaction/.env.docker]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # ============ МИКРОСЕРВИСЫ ============
+  account:
+    image: elektroncode/microservices-account:latest
+    env_file: [./account/.env.docker]
+    ports: ["9000:9000"]
+    depends_on:
+      postgres:
+        condition: service_started
+      account_migration:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  transaction:
+    image: elektroncode/microservices-transaction:latest
+    env_file: [./transaction/.env.docker]
+    ports: ["9002:9002"]
+    depends_on:
+      postgres:
+        condition: service_started
+      transaction_migration:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_started
+    restart: unless-stopped
+
+  auth:
+    image: elektroncode/microservices-auth:latest
+    env_file: [./auth/.env.docker]
+    ports: ["9001:9001"]
+    depends_on:
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+    driver: local
