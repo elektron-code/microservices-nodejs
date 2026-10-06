@@ -21,7 +21,10 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle(`${serviceName} microservice`)
     .setDescription('API Documentation')
-    .addServer(`http://${host}:${port}`)      // ← БЕЗ префикса
+    .addServer(`http://${host}:${port}`) 
+    .addServer(
+      `http://localhost:${config.get('HTTP_PORT')}`,
+    )     // ← БЕЗ префикса
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

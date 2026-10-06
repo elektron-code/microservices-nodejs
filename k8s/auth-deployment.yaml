@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.k8s.yaml -o k8s/
+    kompose.version: 1.38.0 (a8f5d1cbd)
+  labels:
+    io.kompose.service: auth
+  name: auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: auth
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.k8s.yaml -o k8s/
+        kompose.version: 1.38.0 (a8f5d1cbd)
+      labels:
+        io.kompose.service: auth
+    spec:
+      containers:
+        - env:
+            - name: HTTP_HOST
+              value: 0.0.0.0
+            - name: HTTP_PORT
+              value: "9001"
+            - name: HTTP_PREFIX
+              value: /api/auth
+            - name: HTTP_VERSION
+              value: "1"
+            - name: JWT_ACCESS_EXP
+              value: 1h
+            - name: JWT_ACCESS_SECRET
+              value: accessSecret
+            - name: JWT_ALG
+              value: HS256
+            - name: JWT_REFRESH_EXP
+              value: 24h
+            - name: JWT_REFRESH_SECRET
+              value: refreshSecret
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PASSWORD
+              value: password
+            - name: REDIS_PORT
+              value: "6379"
+            - name: SERVICE_NAME
+              value: auth
+          image: elektroncode/microservices-auth:latest
+          name: auth
+          ports:
+            - containerPort: 9001
+              protocol: TCP
+      restartPolicy: Always

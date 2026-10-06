@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.k8s.yaml -o k8s/
+    kompose.version: 1.38.0 (a8f5d1cbd)
+  labels:
+    io.kompose.service: redis-commander
+  name: redis-commander
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: redis-commander
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.k8s.yaml -o k8s/
+        kompose.version: 1.38.0 (a8f5d1cbd)
+      labels:
+        io.kompose.service: redis-commander
+    spec:
+      containers:
+        - env:
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_HOSTS
+              value: redis
+            - name: REDIS_PASSWORD
+              value: password
+            - name: REDIS_PORT
+              value: redis:6379
+          image: rediscommander/redis-commander:latest
+          name: book-redis-commander
+          ports:
+            - containerPort: 8081
+              protocol: TCP
+      restartPolicy: Always

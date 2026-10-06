@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: account-migration
+spec:
+  template:
+    spec:
+      containers:
+        - name: account-migration
+          image: elektroncode/microservices-account-migration:latest
+          env:
+            - name: DB_TYPE
+              value: postgres
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_DATABASE
+              value: account-db
+            - name: DB_USERNAME
+              value: postgres
+            - name: DB_PASSWORD
+              value: password
+            - name: DB_MIGRATIONS_RUN
+              value: "true"
+            - name: DB_MIGRATIONS_TABLE_NAME
+              value: database_migrations
+            - name: DB_ENTITIES
+              value: "dist/**/*.entity.js"
+            - name: DB_MIGRATIONS
+              value: "dist/module/database/migrations/*.js"
+      restartPolicy: Never
+  backoffLimit: 3

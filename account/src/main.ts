@@ -20,6 +20,9 @@ async function bootstrap() {
     .addServer(
       `http://${config.get('HTTP_HOST')}:${config.get('HTTP_PORT')}`,
     )
+    .addServer(
+      `http://localhost:${config.get('HTTP_PORT')}`,
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, configSwagger);

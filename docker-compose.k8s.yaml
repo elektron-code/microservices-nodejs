@@ -1,0 +1,120 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: book-dbs
+    ports: ["5432:5432"]
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    #volumes:
+      #- ./docker/volumes/postgres:/var/lib/postgresql/data
+      #- ./docker/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: book-kafka-zookeeper
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+    ports: ["2181:2181"]
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: book-kafka
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    ports: ["9092:9092"]
+    restart: unless-stopped
+
+  redis:
+    container_name: book-redis
+    image: bitnamilegacy/redis:7.0
+    command: redis-server --requirepass password --save "" --appendonly no
+    ports:
+      - 6379:6379
+
+  redis-commander:
+    container_name: book-redis-commander
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=redis:6379
+      - REDIS_PASSWORD=password
+    ports: ["8081:8081"]
+
+  account:
+    image: elektroncode/microservices-account:latest
+    environment:
+      - SERVICE_NAME=account
+      - HTTP_PORT=9000
+      - HTTP_HOST=0.0.0.0
+      - HTTP_PREFIX=/api/account
+      - HTTP_VERSION=1
+      - DB_TYPE=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=account-db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=password
+      - DB_LOGGING=false
+      - DB_ENTITIES=dist/**/*.entity.js
+      - DB_MIGRATIONS=dist/module/database/migrations/*.js
+      - DB_MIGRATIONS_RUN=false
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=password
+      - KAFKA_CLIENT_ID=account
+      - KAFKA_CONSUMER_GROUP_ID=account-consumer
+      - KAFKA_CLIENT_BROKERS=kafka:9092
+    ports: ["9000:9000"]
+
+  transaction:
+    image: elektroncode/microservices-transaction:latest
+    environment:
+      - SERVICE_NAME=transaction
+      - HTTP_PORT=9002
+      - HTTP_HOST=0.0.0.0
+      - HTTP_PREFIX=/api/transaction
+      - HTTP_VERSION=1
+      - DB_TYPE=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=transaction-db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=password
+      - DB_LOGGING=false
+      - DB_ENTITIES=dist/**/*.entity.js
+      - DB_MIGRATIONS=dist/module/database/migrations/*.js
+      - DB_MIGRATIONS_RUN=false
+      - KAFKA_CLIENT_ID=transaction
+      - KAFKA_CONSUMER_GROUP_ID=transaction-consumer
+      - KAFKA_CLIENT_BROKERS=kafka:9092
+    ports: ["9002:9002"]
+
+  auth:
+    image: elektroncode/microservices-auth:latest
+    environment:
+      - SERVICE_NAME=auth
+      - HTTP_PORT=9001
+      - HTTP_HOST=0.0.0.0
+      - HTTP_PREFIX=/api/auth
+      - HTTP_VERSION=1
+      - JWT_ALG=HS256
+      - JWT_ACCESS_SECRET=accessSecret
+      - JWT_ACCESS_EXP=1h
+      - JWT_REFRESH_SECRET=refreshSecret
+      - JWT_REFRESH_EXP=24h
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=password
+    ports: ["9001:9001"]

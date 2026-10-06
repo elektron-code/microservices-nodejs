@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.k8s.yaml -o k8s/
+    kompose.version: 1.38.0 (a8f5d1cbd)
+  labels:
+    io.kompose.service: transaction
+  name: transaction
+spec:
+  ports:
+    - name: "9002"
+      port: 9002
+      targetPort: 9002
+  selector:
+    io.kompose.service: transaction
