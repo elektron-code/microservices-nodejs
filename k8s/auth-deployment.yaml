@@ -22,6 +22,8 @@ spec:
     spec:
       containers:
         - env:
+            - name: ACCOUNT_URL
+              value: http://account:9000/api/account 
             - name: HTTP_HOST
               value: 0.0.0.0
             - name: HTTP_PORT

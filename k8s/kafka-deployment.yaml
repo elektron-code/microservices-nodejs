@@ -14,6 +14,7 @@ spec:
       labels:
         io.kompose.service: kafka
     spec:
+      enableServiceLinks: false
       containers:
         - name: book-kafka
           image: confluentinc/cp-kafka:7.5.0

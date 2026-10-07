@@ -20,17 +20,20 @@ spec:
       labels:
         io.kompose.service: redis-commander
     spec:
+      enableServiceLinks: false
       containers:
         - env:
             - name: REDIS_HOST
               value: redis
-            - name: REDIS_HOSTS
-              value: redis
             - name: REDIS_PASSWORD
               value: password
             - name: REDIS_PORT
-              value: redis:6379
-          image: rediscommander/redis-commander:latest
+              value: "6379"
+            - name: DEBUG
+              value: "ioredis:*"
+            - name: NODE_DEBUG
+              value: "ioredis:*"
+          image: ghcr.io/joeferner/redis-commander:latest
           name: book-redis-commander
           ports:
             - containerPort: 8081

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-init
+  labels:
+    io.kompose.service: kafka-init
+spec:
+  restartPolicy: Never
+  containers:
+    - name: book-kafka-init
+      image: confluentinc/cp-kafka:7.7.1
+      command:
+        - /bin/sh
+        - -c
+        - |
+          kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic TransactionSaved --partitions 1 --replication-factor 1
+          kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic BalanceChanged --partitions 1 --replication-factor 1
+          kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic __consumer_offsets --partitions 1 --replication-factor 1 --config cleanup.policy=compact
+          echo 'Topics created successfully'
